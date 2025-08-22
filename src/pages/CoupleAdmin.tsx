@@ -6,65 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Plus, Gift, MessageSquare, ExternalLink, Trash2, ArrowLeft } from "lucide-react";
+import { Heart, Plus, Gift, MessageSquare, ExternalLink, Trash2, ArrowLeft, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-
-interface WishlistItem {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  store: string;
-  price: string;
-  image?: string;
-}
-
-interface Gift {
-  id: string;
-  type: "item" | "cash";
-  itemTitle?: string;
-  amount?: string;
-  guestName: string;
-  message: string;
-  from: string;
-  date: string;
-}
+import { useRegistry } from "@/contexts/RegistryContext";
 
 const CoupleAdmin = () => {
   const { toast } = useToast();
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([
-    {
-      id: "1",
-      title: "Coffee Maker",
-      description: "Premium espresso machine for our morning routine",
-      url: "https://amazon.in/example",
-      store: "Amazon",
-      price: "₹25,000"
-    }
-  ]);
+  const { wishlistItems, gifts, addWishlistItem, removeWishlistItem } = useRegistry();
   
-  const [gifts, setGifts] = useState<Gift[]>([
-    {
-      id: "1",
-      type: "cash",
-      amount: "₹5,000",
-      guestName: "Priya & Family",
-      message: "Wishing you both a lifetime of happiness!",
-      from: "Priya, Raj, and Kids",
-      date: "2024-01-15"
-    },
-    {
-      id: "2",
-      type: "item",
-      itemTitle: "Coffee Maker",
-      guestName: "Arjun",
-      message: "Hope you enjoy your morning coffees together!",
-      from: "Arjun & Meera",
-      date: "2024-01-14"
-    }
-  ]);
-
   const [newItem, setNewItem] = useState({
     title: "",
     description: "",
@@ -73,7 +23,7 @@ const CoupleAdmin = () => {
     price: ""
   });
 
-  const addWishlistItem = () => {
+  const handleAddItem = () => {
     if (!newItem.title || !newItem.url) {
       toast({
         title: "Missing Information",
@@ -83,12 +33,7 @@ const CoupleAdmin = () => {
       return;
     }
 
-    const item: WishlistItem = {
-      id: Date.now().toString(),
-      ...newItem
-    };
-
-    setWishlistItems([...wishlistItems, item]);
+    addWishlistItem(newItem);
     setNewItem({ title: "", description: "", url: "", store: "", price: "" });
     
     toast({
@@ -97,8 +42,8 @@ const CoupleAdmin = () => {
     });
   };
 
-  const removeWishlistItem = (id: string) => {
-    setWishlistItems(wishlistItems.filter(item => item.id !== id));
+  const handleRemoveItem = (id: string) => {
+    removeWishlistItem(id);
     toast({
       title: "Item Removed",
       description: "The item has been removed from your wishlist.",
@@ -195,7 +140,7 @@ const CoupleAdmin = () => {
                   </div>
                 </div>
                 
-                <Button onClick={addWishlistItem} variant="wedding">
+                <Button onClick={handleAddItem} variant="wedding">
                   <Plus className="w-4 h-4 mr-2" />
                   Add to Wishlist
                 </Button>
@@ -205,12 +150,20 @@ const CoupleAdmin = () => {
             {/* Current Wishlist */}
             <div className="space-y-4">
               <h3 className="font-wedding text-xl font-semibold">Current Wishlist</h3>
-              {wishlistItems.map((item) => (
+            {wishlistItems.map((item) => (
                 <Card key={item.id} className="border-primary/20 shadow-elegant">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-lg mb-2">{item.title}</h4>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-semibold text-lg">{item.title}</h4>
+                          {item.status === 'purchased' && (
+                            <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Purchased
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-muted-foreground mb-2">{item.description}</p>
                         <div className="flex items-center gap-4 text-sm">
                           <Badge variant="secondary">{item.store}</Badge>
@@ -224,11 +177,17 @@ const CoupleAdmin = () => {
                             View Product <ExternalLink className="w-3 h-3" />
                           </a>
                         </div>
+                        {item.status === 'purchased' && item.purchasedBy && (
+                          <div className="mt-2 text-sm text-muted-foreground">
+                            Purchased by: <span className="font-medium">{item.purchasedBy}</span>
+                            {item.purchaseDate && <span> on {item.purchaseDate}</span>}
+                          </div>
+                        )}
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeWishlistItem(item.id)}
+                        onClick={() => handleRemoveItem(item.id)}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />

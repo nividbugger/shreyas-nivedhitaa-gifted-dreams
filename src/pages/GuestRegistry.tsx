@@ -7,22 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Heart, Gift, ExternalLink, ArrowLeft, QrCode, Smartphone, MapPin } from "lucide-react";
+import { Heart, Gift, ExternalLink, ArrowLeft, QrCode, Smartphone, MapPin, CheckCircle, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-
-interface WishlistItem {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  store: string;
-  price: string;
-  image?: string;
-}
+import { useRegistry, WishlistItem } from "@/contexts/RegistryContext";
 
 const GuestRegistry = () => {
   const { toast } = useToast();
+  const { wishlistItems, purchaseItem, addCashGift } = useRegistry();
   const [selectedItem, setSelectedItem] = useState<WishlistItem | null>(null);
   const [giftForm, setGiftForm] = useState({
     guestName: "",
@@ -30,33 +22,6 @@ const GuestRegistry = () => {
     from: "",
     paymentMethod: ""
   });
-
-  const wishlistItems: WishlistItem[] = [
-    {
-      id: "1",
-      title: "Premium Coffee Maker",
-      description: "Espresso machine for our morning coffee rituals together",
-      url: "https://amazon.in/example",
-      store: "Amazon",
-      price: "₹25,000"
-    },
-    {
-      id: "2",
-      title: "Silk Bedsheet Set",
-      description: "Luxurious silk bedsheets for our new home",
-      url: "https://flipkart.com/example",
-      store: "Flipkart",
-      price: "₹8,500"
-    },
-    {
-      id: "3",
-      title: "Skincare Gift Set",
-      description: "Premium skincare collection for the bride",
-      url: "https://nykaa.com/example",
-      store: "Nykaa",
-      price: "₹12,000"
-    }
-  ];
 
   const handlePurchaseGift = (item: WishlistItem) => {
     if (!giftForm.guestName || !giftForm.message || !giftForm.from) {
@@ -68,7 +33,8 @@ const GuestRegistry = () => {
       return;
     }
 
-    // Here you would integrate with payment processing
+    purchaseItem(item.id, giftForm.guestName, giftForm.from, giftForm.message);
+    
     toast({
       title: "Gift Sent! 🎁",
       description: "Thank you for your thoughtful gift! The couple will be notified.",
@@ -87,6 +53,8 @@ const GuestRegistry = () => {
       });
       return;
     }
+
+    addCashGift(giftForm.guestName, giftForm.from, giftForm.message);
 
     toast({
       title: "Thank You! 💝",
@@ -129,14 +97,24 @@ const GuestRegistry = () => {
           <TabsContent value="wishlist" className="space-y-6">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {wishlistItems.map((item) => (
-                <Card key={item.id} className="border-primary/20 shadow-elegant hover:shadow-gold transition-all duration-300 group">
+                <Card key={item.id} className={`border-primary/20 shadow-elegant hover:shadow-gold transition-all duration-300 group ${item.status === 'purchased' ? 'opacity-75' : ''}`}>
                   <CardContent className="p-6">
                     <div className="mb-4">
-                      <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">{item.title}</h3>
-                      <p className="text-muted-foreground text-sm mb-3">{item.description}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className={`font-semibold text-lg group-hover:text-primary transition-colors ${item.status === 'purchased' ? 'line-through text-muted-foreground' : ''}`}>
+                          {item.title}
+                        </h3>
+                        {item.status === 'purchased' && (
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Purchased
+                          </Badge>
+                        )}
+                      </div>
+                      <p className={`text-muted-foreground text-sm mb-3 ${item.status === 'purchased' ? 'line-through' : ''}`}>{item.description}</p>
                       <div className="flex items-center justify-between mb-4">
                         <Badge variant="secondary">{item.store}</Badge>
-                        <span className="font-semibold text-primary">{item.price}</span>
+                        <span className={`font-semibold text-primary ${item.status === 'purchased' ? 'line-through' : ''}`}>{item.price}</span>
                       </div>
                     </div>
                     
@@ -146,27 +124,35 @@ const GuestRegistry = () => {
                         target="_blank" 
                         rel="noopener noreferrer"
                       >
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full" disabled={item.status === 'purchased'}>
                           <ExternalLink className="w-4 h-4 mr-2" />
                           View on {item.store}
                         </Button>
                       </a>
                       
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="wedding" 
-                            className="w-full"
-                            onClick={() => setSelectedItem(item)}
-                          >
-                            <Gift className="w-4 h-4 mr-2" />
-                            Gift This Item
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md">
-                          <DialogHeader>
-                            <DialogTitle className="font-wedding">Gift: {item.title}</DialogTitle>
-                          </DialogHeader>
+                      {item.status === 'purchased' ? (
+                        <div className="text-center p-4 bg-muted/50 rounded-lg">
+                          <CheckCircle className="w-8 h-8 mx-auto text-green-600 mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            This item has been purchased by {item.purchasedBy}
+                          </p>
+                        </div>
+                      ) : (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="wedding" 
+                              className="w-full"
+                              onClick={() => setSelectedItem(item)}
+                            >
+                              <Gift className="w-4 h-4 mr-2" />
+                              Gift This Item
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle className="font-wedding">Gift: {item.title}</DialogTitle>
+                            </DialogHeader>
                           <div className="space-y-4">
                             <div className="bg-muted/50 p-4 rounded-lg">
                               <div className="flex items-start gap-2 mb-2">
@@ -222,7 +208,8 @@ const GuestRegistry = () => {
                             </Button>
                           </div>
                         </DialogContent>
-                      </Dialog>
+                        </Dialog>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

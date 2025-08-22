@@ -7,23 +7,26 @@ import Index from "./pages/Index";
 import CoupleAdmin from "./pages/CoupleAdmin";
 import GuestRegistry from "./pages/GuestRegistry";
 import NotFound from "./pages/NotFound";
+import { RegistryProvider } from "./contexts/RegistryContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/admin" element={<CoupleAdmin />} />
-          <Route path="/registry" element={<GuestRegistry />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <RegistryProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/admin" element={<CoupleAdmin />} />
+            <Route path="/registry" element={<GuestRegistry />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </RegistryProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
