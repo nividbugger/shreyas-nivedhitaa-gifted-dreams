@@ -1,73 +1,193 @@
-# Welcome to your Lovable project
+# Wedding Registry - Nivedhitaa & Shreyas
 
-## Project info
+A beautiful, modern wedding registry application built with React, TypeScript, Tailwind CSS, and Supabase.
 
-**URL**: https://lovable.dev/projects/fa284a36-3766-4ed6-94ff-fa7e8858b481
+## Features
 
-## How can I edit this code?
+- 🎁 **Wishlist Management**: Couples can add, edit, and remove items from their wishlist
+- 💝 **Gift Purchasing**: Guests can purchase items or contribute cash gifts
+- 💌 **Personal Messages**: Guests can leave heartfelt messages with their gifts
+- 📱 **Responsive Design**: Beautiful UI that works on all devices
+- 🔄 **Real-time Updates**: Powered by Supabase for real-time data synchronization
+- 🎨 **Elegant Design**: Wedding-themed UI with beautiful gradients and animations
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **Backend**: Supabase (PostgreSQL database, real-time subscriptions)
+- **State Management**: React Context API with custom hooks
+- **Form Handling**: React Hook Form with Zod validation
+- **Icons**: Lucide React
+- **Routing**: React Router DOM
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/fa284a36-3766-4ed6-94ff-fa7e8858b481) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ and npm
+- A Supabase account and project
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 1. Clone the Repository
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+git clone <your-repo-url>
+cd shreyas-nivedhitaa-gifted-dreams
+```
 
-Follow these steps:
+### 2. Install Dependencies
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 3. Set Up Supabase
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to your project settings and copy the Project URL and anon public key
+3. In the Supabase SQL Editor, run the schema from `supabase-schema.sql`
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 4. Environment Configuration
+
+1. Copy the environment template:
+```bash
+cp .env.example .env.local
+```
+
+2. Update `.env.local` with your Supabase credentials:
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 5. Run the Development Server
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Supabase Database Schema
 
-**Use GitHub Codespaces**
+The application uses two main tables:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### `wishlist_items` Table
 
-## What technologies are used for this project?
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `title` | VARCHAR(255) | Item title |
+| `description` | TEXT | Item description |
+| `url` | TEXT | Product URL |
+| `store` | VARCHAR(100) | Store name (Amazon, Flipkart, etc.) |
+| `price` | VARCHAR(50) | Item price |
+| `image_url` | TEXT | Optional image URL |
+| `status` | VARCHAR(20) | 'available', 'purchased', or 'reserved' |
+| `purchased_by` | VARCHAR(255) | Name of purchaser |
+| `purchase_date` | DATE | Date of purchase |
+| `created_at` | TIMESTAMP | Creation timestamp |
+| `updated_at` | TIMESTAMP | Last update timestamp |
 
-This project is built with:
+### `gifts` Table
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `type` | VARCHAR(10) | 'item' or 'cash' |
+| `item_id` | UUID | Foreign key to wishlist_items |
+| `item_title` | VARCHAR(255) | Item title (for reference) |
+| `amount` | VARCHAR(50) | Cash gift amount |
+| `guest_name` | VARCHAR(255) | Guest's name |
+| `message` | TEXT | Personal message |
+| `from_name` | VARCHAR(255) | Gift sender name |
+| `date` | DATE | Gift date |
+| `created_at` | TIMESTAMP | Creation timestamp |
+| `updated_at` | TIMESTAMP | Last update timestamp |
 
-## How can I deploy this project?
+## Application Structure
 
-Simply open [Lovable](https://lovable.dev/projects/fa284a36-3766-4ed6-94ff-fa7e8858b481) and click on Share -> Publish.
+```
+src/
+├── components/ui/          # Reusable UI components (shadcn/ui)
+├── contexts/              # React Context providers
+│   └── RegistryContext.tsx # Main application state
+├── hooks/                 # Custom React hooks
+├── lib/                   # Utility libraries
+│   ├── supabase.ts       # Supabase client configuration
+│   └── utils.ts          # General utilities
+├── pages/                 # Application pages
+│   ├── Index.tsx         # Landing page
+│   ├── GuestRegistry.tsx # Guest interface
+│   ├── CoupleAdmin.tsx   # Couple admin panel
+│   └── NotFound.tsx      # 404 page
+├── services/             # External service integrations
+│   └── supabaseService.ts # Supabase database operations
+└── assets/               # Static assets
+```
 
-## Can I connect a custom domain to my Lovable project?
+## Key Features Explained
 
-Yes, you can!
+### Guest Experience
+- Browse the couple's wishlist
+- Purchase items with personal messages
+- Send cash gifts via UPI
+- View delivery address for physical gifts
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Couple Admin Panel
+- Add new items to wishlist
+- Remove items from wishlist
+- View all gifts and messages received
+- Track purchase status of items
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Real-time Updates
+- Items are marked as purchased immediately
+- New gifts appear in real-time
+- Fallback to local state if Supabase is unavailable
+
+## Deployment
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Deploy to Vercel (Recommended)
+
+1. Connect your GitHub repository to Vercel
+2. Add environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
+
+### Deploy to Netlify
+
+1. Build the project: `npm run build`
+2. Upload the `dist` folder to Netlify
+3. Configure environment variables in Netlify dashboard
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `VITE_SUPABASE_URL` | Your Supabase project URL | Yes |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase anonymous key | Yes |
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit your changes: `git commit -am 'Add feature'`
+4. Push to the branch: `git push origin feature-name`
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Support
+
+For support or questions, please open an issue in the GitHub repository.
+
+---
+
+Made with ❤️ for Nivedhitaa & Shreyas's special day
