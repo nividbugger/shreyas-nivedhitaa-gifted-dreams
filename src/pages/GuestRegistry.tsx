@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Heart, Gift, ExternalLink, ArrowLeft, QrCode, Smartphone, MapPin, CheckCircle, X } from "lucide-react";
+import { Heart, Gift, ExternalLink, ArrowLeft, QrCode, Smartphone, MapPin, CheckCircle, X, Copy, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useRegistry, WishlistItem } from "@/contexts/RegistryContext";
@@ -20,8 +20,30 @@ const GuestRegistry = () => {
     guestName: "",
     message: "",
     from: "",
-    paymentMethod: ""
+    paymentMethod: "",
+    transactionId: ""
   });
+
+  // Transaction ID validation regex (supports common UPI/bank transaction IDs)
+  const validateTransactionId = (transactionId: string): boolean => {
+    if (!transactionId) return true; // Optional field
+    
+    // Common patterns for Indian transaction IDs:
+    // - UPI: 12 digit numbers or alphanumeric
+    // - Bank: 8-16 characters alphanumeric
+    // - Razorpay: pay_XXXXXXXXX format
+    // - PhonePe: T + numbers
+    const patterns = [
+      /^[0-9]{12}$/, // 12 digit UPI transaction ID
+      /^[A-Za-z0-9]{8,16}$/, // 8-16 alphanumeric (general bank)
+      /^pay_[A-Za-z0-9]{14}$/, // Razorpay format
+      /^T[0-9]{10,15}$/, // PhonePe format
+      /^[0-9]{10,20}$/, // General numeric transaction ID
+      /^UTR[A-Za-z0-9]{8,12}$/, // NEFT/RTGS UTR format
+    ];
+    
+    return patterns.some(pattern => pattern.test(transactionId));
+  };
 
   const handlePurchaseGift = (item: WishlistItem) => {
     if (!giftForm.guestName || !giftForm.message || !giftForm.from) {
@@ -40,7 +62,7 @@ const GuestRegistry = () => {
       description: "Thank you for your thoughtful gift! The couple will be notified.",
     });
     
-    setGiftForm({ guestName: "", message: "", from: "", paymentMethod: "" });
+    setGiftForm({ guestName: "", message: "", from: "", paymentMethod: "", transactionId: "" });
     setSelectedItem(null);
   };
 
@@ -54,14 +76,41 @@ const GuestRegistry = () => {
       return;
     }
 
-    addCashGift(giftForm.guestName, giftForm.from, giftForm.message);
+    if (giftForm.transactionId && !validateTransactionId(giftForm.transactionId)) {
+      toast({
+        title: "Invalid Transaction ID",
+        description: "Please enter a valid transaction ID format (12 digits, UTR format, or similar).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addCashGift(giftForm.guestName, giftForm.from, giftForm.message, giftForm.transactionId);
 
     toast({
       title: "Thank You! 💝",
-      description: "Your message has been sent to the couple. Please use the UPI details to complete your contribution.",
+      description: giftForm.transactionId 
+        ? "Your message and transaction details have been sent to the couple."
+        : "Your message has been sent to the couple. Please use the UPI details to complete your contribution.",
     });
     
-    setGiftForm({ guestName: "", message: "", from: "", paymentMethod: "" });
+    setGiftForm({ guestName: "", message: "", from: "", paymentMethod: "", transactionId: "" });
+  };
+
+  const copyAddress = () => {
+    const address = "Nivedhitaa Ranganathan, 4002, Sobha Jasmine, Green Glen Layout, Bellandur, Bangalore, 560103";
+    navigator.clipboard.writeText(address).then(() => {
+      toast({
+        title: "Address Copied! 📋",
+        description: "The delivery address has been copied to your clipboard.",
+      });
+    }).catch(() => {
+      toast({
+        title: "Copy Failed",
+        description: "Please manually copy the address.",
+        variant: "destructive",
+      });
+    });
   };
 
   return (
@@ -96,7 +145,14 @@ const GuestRegistry = () => {
           {/* Wishlist */}
           <TabsContent value="wishlist" className="space-y-6">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {wishlistItems.map((item) => (
+              {wishlistItems
+                .sort((a, b) => {
+                  // Show unpurchased items first, then purchased items
+                  if (a.status === 'available' && b.status === 'purchased') return -1;
+                  if (a.status === 'purchased' && b.status === 'available') return 1;
+                  return 0;
+                })
+                .map((item) => (
                 <Card key={item.id} className={`border-primary/20 shadow-elegant hover:shadow-gold transition-all duration-300 group ${item.status === 'purchased' ? 'opacity-75' : ''}`}>
                   <CardContent className="p-6">
                     <div className="mb-4">
@@ -155,17 +211,54 @@ const GuestRegistry = () => {
                             </DialogHeader>
                           <div className="space-y-4">
                             <div className="bg-muted/50 p-4 rounded-lg">
-                              <div className="flex items-start gap-2 mb-2">
-                                <MapPin className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
-                                <div>
-                                  <p className="text-sm font-medium">Delivery Address:</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Nivedhitaa & Shreyas<br />
-                                    123 Wedding Lane, Bangalore<br />
-                                    Karnataka 560001<br />
-                                    Phone: +91 98765 43210
-                                  </p>
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-sm font-medium">Delivery Address:</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Nivedhitaa Ranganathan<br />
+                                      4002, Sobha Jasmine<br />
+                                      Green Glen Layout, Bellandur<br />
+                                      Bangalore, 560103
+                                    </p>
+                                  </div>
                                 </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={copyAddress}
+                                  className="text-primary hover:text-primary/80 p-2"
+                                  title="Copy address"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                💡 Click the copy button to use this address when purchasing online
+                              </p>
+                            </div>
+
+                            <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg">
+                              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                                <Gift className="w-4 h-4 text-primary" />
+                                Purchase This Item
+                              </h4>
+                              <a 
+                                href={selectedItem?.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block mb-3"
+                              >
+                                <Button variant="outline" className="w-full">
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  Buy Now on {selectedItem?.store}
+                                </Button>
+                              </a>
+                              <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                                <p className="text-xs text-amber-800">
+                                  <strong>📝 Important:</strong> After purchasing, please come back here and fill out the form below to let the couple know about your gift!
+                                </p>
                               </div>
                             </div>
                             
@@ -294,6 +387,32 @@ const GuestRegistry = () => {
                         onChange={(e) => setGiftForm({...giftForm, message: e.target.value})}
                         placeholder="Share your blessings and wishes..."
                       />
+                    </div>
+
+                    {/* Transaction ID Field */}
+                    <div>
+                      <Label htmlFor="transactionId" className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-primary" />
+                        Transaction ID (Optional)
+                      </Label>
+                      <Input
+                        id="transactionId"
+                        value={giftForm.transactionId}
+                        onChange={(e) => setGiftForm({...giftForm, transactionId: e.target.value})}
+                        placeholder="e.g., 123456789012 or UTR123456789"
+                        className={giftForm.transactionId && !validateTransactionId(giftForm.transactionId) 
+                          ? "border-destructive focus:border-destructive" 
+                          : ""
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        💡 Add your UPI/bank transaction ID for safe tracking of your gift. This helps both you and the couple keep records.
+                      </p>
+                      {giftForm.transactionId && !validateTransactionId(giftForm.transactionId) && (
+                        <p className="text-xs text-destructive mt-1">
+                          Please enter a valid transaction ID (12 digits, UTR format, or similar)
+                        </p>
+                      )}
                     </div>
                     
                     <Button 

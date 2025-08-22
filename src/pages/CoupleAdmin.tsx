@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,14 +6,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Plus, Gift, MessageSquare, ExternalLink, Trash2, ArrowLeft, CheckCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Heart, Plus, Gift, MessageSquare, ExternalLink, Trash2, ArrowLeft, CheckCircle, LogOut, Loader2, Wand2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useRegistry } from "@/contexts/RegistryContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProductScraping } from "@/hooks/useProductScraping";
 
 const CoupleAdmin = () => {
   const { toast } = useToast();
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
   const { wishlistItems, gifts, addWishlistItem, removeWishlistItem } = useRegistry();
+  const { isLoading: isScrapingLoading, error: scrapingError, productInfo, scrapeProduct, clearData } = useProductScraping();
   
   const [newItem, setNewItem] = useState({
     title: "",
@@ -22,6 +27,58 @@ const CoupleAdmin = () => {
     store: "",
     price: ""
   });
+  
+  const [urlForScraping, setUrlForScraping] = useState("");
+
+  const handleAutoFill = async () => {
+    if (!urlForScraping.trim()) {
+      toast({
+        title: "Missing URL",
+        description: "Please enter a product URL to auto-fill details.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await scrapeProduct(urlForScraping);
+  };
+
+  // Auto-fill form when product info is scraped
+  React.useEffect(() => {
+    if (productInfo) {
+      setNewItem({
+        title: productInfo.title,
+        description: productInfo.description,
+        url: urlForScraping,
+        store: productInfo.store,
+        price: productInfo.price
+      });
+      
+      // Show appropriate success message based on what was extracted
+      if (productInfo.title && productInfo.price) {
+        toast({
+          title: "✅ Full Product Details Retrieved",
+          description: "All product information has been auto-filled successfully!",
+        });
+      } else if (productInfo.title || productInfo.store) {
+        toast({
+          title: "⚠️ Partial Information Retrieved",
+          description: "Some product details have been auto-filled. Please complete the remaining fields.",
+          variant: "default",
+        });
+      }
+    }
+  }, [productInfo, urlForScraping, toast]);
+
+  React.useEffect(() => {
+    if (scrapingError) {
+      toast({
+        title: "Auto-fill Error",
+        description: scrapingError,
+        variant: "destructive",
+      });
+    }
+  }, [scrapingError, toast]);
 
   const handleAddItem = () => {
     if (!newItem.title || !newItem.url) {
@@ -35,11 +92,19 @@ const CoupleAdmin = () => {
 
     addWishlistItem(newItem);
     setNewItem({ title: "", description: "", url: "", store: "", price: "" });
+    setUrlForScraping("");
+    clearData();
     
     toast({
       title: "Item Added",
       description: "Your wishlist item has been added successfully!",
     });
+  };
+
+  const handleClearForm = () => {
+    setNewItem({ title: "", description: "", url: "", store: "", price: "" });
+    setUrlForScraping("");
+    clearData();
   };
 
   const handleRemoveItem = (id: string) => {
@@ -48,6 +113,23 @@ const CoupleAdmin = () => {
       title: "Item Removed",
       description: "The item has been removed from your wishlist.",
     });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Logout Error",
+        description: "There was an error logging out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -69,7 +151,17 @@ const CoupleAdmin = () => {
               <p className="text-muted-foreground font-elegant">Manage your wedding registry</p>
             </div>
           </div>
-          <Heart className="w-8 h-8 text-primary animate-float" />
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-sm font-medium">Welcome back!</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+            <Heart className="w-8 h-8 text-primary animate-float" />
+          </div>
         </div>
 
         <Tabs defaultValue="wishlist" className="space-y-6">
@@ -88,6 +180,44 @@ const CoupleAdmin = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Auto-fill section */}
+                <div className="p-4 bg-muted/50 rounded-lg border-2 border-dashed border-primary/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wand2 className="w-4 h-4 text-primary" />
+                    <Label className="font-semibold">Auto-fill from URL</Label>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="Paste product URL here (Amazon, Flipkart, etc.)"
+                        value={urlForScraping}
+                        onChange={(e) => setUrlForScraping(e.target.value)}
+                        disabled={isScrapingLoading}
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleAutoFill}
+                      disabled={isScrapingLoading || !urlForScraping.trim()}
+                      variant="outline"
+                    >
+                      {isScrapingLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Fetching...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-4 h-4 mr-2" />
+                          Auto-fill
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Automatically extract product title, description, price, and store info from the URL
+                  </p>
+                </div>
+                
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="title">Item Title</Label>
@@ -140,17 +270,29 @@ const CoupleAdmin = () => {
                   </div>
                 </div>
                 
-                <Button onClick={handleAddItem} variant="wedding">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add to Wishlist
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleAddItem} variant="wedding" className="flex-1">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add to Wishlist
+                  </Button>
+                  <Button onClick={handleClearForm} variant="outline">
+                    Clear Form
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
             {/* Current Wishlist */}
             <div className="space-y-4">
               <h3 className="font-wedding text-xl font-semibold">Current Wishlist</h3>
-            {wishlistItems.map((item) => (
+            {wishlistItems
+              .sort((a, b) => {
+                // Show unpurchased items first, then purchased items
+                if (a.status === 'available' && b.status === 'purchased') return -1;
+                if (a.status === 'purchased' && b.status === 'available') return 1;
+                return 0;
+              })
+              .map((item) => (
                 <Card key={item.id} className="border-primary/20 shadow-elegant">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
