@@ -10,12 +10,12 @@ import { Heart, Plus, Gift, MessageSquare, ExternalLink, Trash2, ArrowLeft, Chec
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useRegistry } from "@/contexts/RegistryContext";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { useProductScraping } from "@/hooks/useProductScraping";
 
 const CoupleAdmin = () => {
   const { toast } = useToast();
-  const { signOut, user } = useAuth();
+  
   const navigate = useNavigate();
   const { wishlistItems, gifts, addWishlistItem, removeWishlistItem } = useRegistry();
   const { isLoading: isScrapingLoading, error: scrapingError, productInfo, scrapeProduct, clearData } = useProductScraping();
@@ -115,22 +115,6 @@ const CoupleAdmin = () => {
     });
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out.",
-      });
-      navigate("/");
-    } catch (error) {
-      toast({
-        title: "Logout Error",
-        description: "There was an error logging out. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-elegant">
@@ -151,17 +135,7 @@ const CoupleAdmin = () => {
               <p className="text-muted-foreground font-elegant">Manage your wedding registry</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium">Welcome back!</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-            <Heart className="w-8 h-8 text-primary animate-float" />
-          </div>
+          <Heart className="w-8 h-8 text-primary animate-float" />
         </div>
 
         <Tabs defaultValue="wishlist" className="space-y-6">
