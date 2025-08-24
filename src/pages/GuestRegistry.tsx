@@ -334,7 +334,7 @@ const GuestRegistry = () => {
                           Pay directly using any UPI app
                         </p>
                         <div className="bg-muted/50 p-3 rounded-lg">
-                          <p className="font-mono text-sm">shreyas.nivedhitaa@upi</p>
+                          <p className="font-mono text-sm">7795766860@pthdfc</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -347,9 +347,11 @@ const GuestRegistry = () => {
                           Scan to pay instantly
                         </p>
                         <div className="bg-muted/50 p-4 rounded-lg">
-                          <div className="w-24 h-24 bg-primary/10 rounded-lg mx-auto flex items-center justify-center">
-                            <QrCode className="w-12 h-12 text-primary" />
-                          </div>
+                          <img 
+                            src="/upi-qr-code.png" 
+                            alt="UPI QR Code for 7795766860@pthdfc"
+                            className="w-24 h-24 mx-auto rounded-lg"
+                          />
                         </div>
                       </CardContent>
                     </Card>
