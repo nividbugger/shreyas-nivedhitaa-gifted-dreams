@@ -348,10 +348,16 @@ const GuestRegistry = () => {
                         </p>
                         <div className="bg-muted/50 p-4 rounded-lg">
                           <img 
-                            src="/upi-qr-code.png" 
+                            src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=7795766860@pthdfc&pn=Nivedhitaa%20%26%20Shreyas&cu=INR" 
                             alt="UPI QR Code for 7795766860@pthdfc"
-                            className="w-24 h-24 mx-auto rounded-lg"
+                            className="w-32 h-32 mx-auto rounded-lg object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='5' height='5' x='3' y='3' rx='1'/%3E%3Crect width='5' height='5' x='16' y='3' rx='1'/%3E%3Crect width='5' height='5' x='3' y='16' rx='1'/%3E%3Cpath d='m21 16-3.5-3.5-3.5 3.5'/%3E%3Cpath d='m21 21-3.5-3.5-3.5 3.5'/%3E%3Cpath d='M21 11V9a2 2 0 0 0-2-2H9'/%3E%3Cpath d='M9 21H7a2 2 0 0 1-2-2V9'/%3E%3C/svg%3E";
+                            }}
                           />
+                          <p className="text-xs text-muted-foreground mt-2 text-center">
+                            Scan to pay 7795766860@pthdfc
+                          </p>
                         </div>
                       </CardContent>
                     </Card>
